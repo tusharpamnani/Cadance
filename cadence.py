@@ -332,10 +332,63 @@ def handle_resume_iteration(slug: str, meta: dict):
         update_iteration_state(slug, IterationState.ENGINEERING_REQUIREMENTS_GATHERING)
         state = IterationState.ENGINEERING_REQUIREMENTS_GATHERING.value
         console.print("[green]Transitioned to 'engineering_requirements_gathering'.[/green]")
-        # TODO: Implement engineering requirements TUI
         
     if state == IterationState.ENGINEERING_REQUIREMENTS_GATHERING.value:
-        console.print("[yellow]Engineering requirements gathering TUI not implemented yet.[/yellow]")
+        pr_md_path = os.path.join(iteration_dir, "product_requirements.md")
+        er_md_path = os.path.join(iteration_dir, "engineering_requirements.md")
+        
+        if not os.path.exists(er_md_path):
+            with open(er_md_path, "w") as f:
+                f.write(f"# Engineering Requirements: {meta['name']}\n\n")
+                
+        if not os.environ.get("GEMINI_API_KEY"):
+            console.print("[bold red]Error: GEMINI_API_KEY environment variable is not set.[/bold red]")
+            return
+            
+        # Read the PRD to provide context
+        prd_context = ""
+        if os.path.exists(pr_md_path):
+            with open(pr_md_path, "r") as f:
+                prd_context = f.read()
+        
+        system_instruction = f"""
+        You are an expert Software Architect translating product requirements into engineering specifications.
+        
+        You will receive the Product Requirements Document (PRD) below for context:
+        
+        --- PRD START ---
+        {prd_context}
+        --- PRD END ---
+        
+        Your job is to create an Engineering Requirements Document (ERD) that covers:
+        - System architecture and component design
+        - Data models and schemas
+        - API contracts and interfaces
+        - Technology stack decisions
+        - File structure and module organization
+        - Error handling and edge cases
+        - Testing strategy
+        
+        Please respond to every message in exactly two parts using this exact format:
+        
+        PART1
+        <Provide ONLY crisp bullet points of critical gaps, technical risks, and missing specifications as direct questions or suggestions to the user. If the ERD is totally complete, just say: "Everything looks good. Type /done to proceed.">
+        
+        PART2
+        ```markdown
+        <The complete, updated Engineering Requirements Document>
+        ```
+        """
+        
+        app = AgenticChatTUI(
+            title="Engineering Requirements",
+            md_path=er_md_path,
+            slug=slug,
+            phase_name="er",
+            system_instruction=system_instruction,
+            done_state=IterationState.ENGINEERING_REQUIREMENTS_GATHERED
+        )
+        app.run()
         return
         
     if state == IterationState.ENGINEERING_REQUIREMENTS_GATHERED.value:
@@ -344,7 +397,70 @@ def handle_resume_iteration(slug: str, meta: dict):
         console.print("[green]Transitioned to 'implementation_in_progress'.[/green]")
         
     if state == IterationState.IMPLEMENTATION_IN_PROGRESS.value:
-        console.print("[yellow]Implementation in progress. Agentic coding UI goes here.[/yellow]")
+        pr_md_path = os.path.join(iteration_dir, "product_requirements.md")
+        er_md_path = os.path.join(iteration_dir, "engineering_requirements.md")
+        impl_md_path = os.path.join(iteration_dir, "implementation_log.md")
+        
+        if not os.path.exists(impl_md_path):
+            with open(impl_md_path, "w") as f:
+                f.write(f"# Implementation Log: {meta['name']}\n\n")
+                
+        if not os.environ.get("GEMINI_API_KEY"):
+            console.print("[bold red]Error: GEMINI_API_KEY environment variable is not set.[/bold red]")
+            return
+            
+        # Read the PRD and ERD to provide context
+        prd_context = ""
+        if os.path.exists(pr_md_path):
+            with open(pr_md_path, "r") as f:
+                prd_context = f.read()
+                
+        erd_context = ""
+        if os.path.exists(er_md_path):
+            with open(er_md_path, "r") as f:
+                erd_context = f.read()
+        
+        system_instruction = f"""
+        You are an expert software developer implementing a project based on requirements.
+        
+        You will receive the Product Requirements Document (PRD) and Engineering Requirements Document (ERD) below for context:
+        
+        --- PRD START ---
+        {prd_context}
+        --- PRD END ---
+        
+        --- ERD START ---
+        {erd_context}
+        --- ERD END ---
+        
+        Your job is to implement the project. For each message from the user, you should:
+        1. Write the code files needed
+        2. Explain what you implemented
+        3. Suggest next steps
+        
+        Use the file tools (create_file, edit_file) to write actual code files.
+        When creating files, use proper project structure as defined in the ERD.
+        
+        Please respond to every message in exactly two parts using this exact format:
+        
+        PART1
+        <Describe what you implemented, any issues encountered, and what should be done next. Be concise.>
+        
+        PART2
+        ```markdown
+        <Updated implementation log with what was done>
+        ```
+        """
+        
+        app = AgenticChatTUI(
+            title="Implementation",
+            md_path=impl_md_path,
+            slug=slug,
+            phase_name="impl",
+            system_instruction=system_instruction,
+            done_state=IterationState.IMPLEMENTATION_COMPLETED
+        )
+        app.run()
         return
 
     if state == IterationState.IMPLEMENTATION_COMPLETED.value:

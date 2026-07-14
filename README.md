@@ -41,12 +41,17 @@ This drops you into a split-pane TUI: chat on the left, live markdown preview on
 
 When the PRD looks good, type `/done` inside the TUI to mark the phase complete and exit. Type `/clear` to reset the chat and start over.
 
+The iteration then moves through these phases:
+1. **Product Requirements** — Build a PRD with the agent
+2. **Engineering Requirements** — Translate PRD into technical specs
+3. **Implementation** — Agent writes code based on the specs
+
 ```bash
 # Resume an iteration (lists active ones if no slug given)
 cadence iterations resume
 ```
 
-Resuming drops you back into the TUI at whatever state the iteration is in — you'll see your PRD so far and can pick up the conversation where you left off.
+Resuming drops you back into the TUI at whatever state the iteration is in — you'll see your progress so far and can pick up where you left off.
 
 ## Usage
 
@@ -87,9 +92,9 @@ cadence iterations resume <slug>
 | `created` | Iteration created |
 | `product_requirements_gathering` | Chatting with agent to build PRD |
 | `product_requirements_gathered` | PRD complete |
-| `engineering_requirements_gathering` | Defining engineering requirements (TUI not yet implemented) |
+| `engineering_requirements_gathering` | Translating PRD into engineering specs |
 | `engineering_requirements_gathered` | Engineering requirements complete |
-| `implementation_in_progress` | Code implementation (tracked state only, not yet implemented) |
+| `implementation_in_progress` | Agentic coding based on requirements |
 | `implementation_completed` | Implementation done |
 | `completed` | Iteration finished |
 
